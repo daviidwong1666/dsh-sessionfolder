@@ -88,11 +88,53 @@ plugin_manager install_bundle target="<本仓库绝对路径>"
   （例如 `var(--dsw-alias-interactive-bg-hover, var(--dsw-alias-bg-layer-2))`），
   不写死颜色——唯一例外是 9 个文件夹色块。
 
+## 依赖与冲突
+
+### 运行时依赖
+
+- 代码里只有一处 `require`：`require('react')`，由宿主的 ModuleLoader 提供。没有
+  `dependencies` / `peerDependencies` / `devDependencies`，不锁任何版本，安装时不会拉包。
+- 依赖的 Host Client 能力（在 DSH **0.2.1-rc.3** 上实测）：client 服务 `slots`、`locale`、
+  `sessions`、`uiWorkspace`、`workspaces`；以及 `sidebar.workspaces` 槽位——它由
+  `@deepseek-ai/dsh-client-ui-workspace` 声明，所以 `dsh.client.inject` 里写了这个包名，
+  保证我的条目注册之前声明方已经在位（`sidebar.workspaces` 一旦没人声明，注册会直接抛错）。
+- 安装 pnpm 报的 `Issues with peer dependencies found` 来自 profile 里其它插件，与本包无关。
+- 兼容性没有版本闸门：槽位契约若在下个 DSH 版本变动（槽位名、ownerProps、注入面），
+  需要跟着改 `client.js`。这是一次性的前端阴影插件，不保证跨大版本可用。
+
+### 与其它插件的冲突面
+
+按「可能踩到」的严重程度排：
+
+1. **同样是接管 `sidebar.workspaces` 的插件**。这个槽位是 `single`，只渲染一个条目：
+   按 `priority` 升序取第一个未 abdicate 的。本插件是 `-1`，宿主是 `0`。所以两个接管型
+   插件同时装只会显示优先级更低的那一个，**不会两套列表叠加**；本插件赢了就意味着
+   对方的浏览器整块不出现（对方的槽位条目仍在账本里，`active: false`）。
+   已知的另一个接管者：`@michengai/dsh-archive-manager`（1.0.18）在「宿主没有声明
+   会话菜单子槽」时用 `priority: -0.5` 自建浏览器。
+2. **往那 5 个子槽注册条目的插件**（`sidebar.workspaces.session.menu.item`、
+   `.session.row.action`、`.directoryFlow`、`sidebar.session.row.leading`、
+   `sidebar.session.row.hover`）。这些子槽由宿主声明，本插件只接管父槽、**不渲染它们**。
+   典型模式：`@michengai/dsh-archive-manager` 检测到宿主声明了菜单子槽后，会改为注册
+   `archive-manager.delete-session`（`order: 500`，会话菜单里的「删除会话」）。这类条目在
+   宿主原生列表里正常出现，**在本插件接管期间不会显示**，因为我的会话菜单只渲染自己的条目。
+   要用它就先临时禁用本插件。
+   （实测：本机 profile 里该包是依赖但不在 `dsh.profile.bundles` 中，当前未加载，
+   所以这条是代码路径层面的冲突面，不是此刻正在发生的冲突。）
+3. **`dsh-better-sidebar`（0.26.0）**：只碰 `conversation.session.header.utilities`、
+   `settings.section`、`sidebar.right.pane.tab` / `.title`，与本插件无交集。
+   它那条 `pending (waiting for service: webRuntime)` 是它自己的状态，与本插件无关。
+4. **`shell.overlay`**：本插件是追加式条目（`id: session-folders-dialog`、`order: 600`），
+   与 dsh-market 等同样往这层加东西的插件不冲突——浮层按 `order` 叠，互不遮挡对方的触发器。
+
 ## 已知限制
 
 - 置顶（pin）没有界面上手（数据层支持排序，但菜单没暴露）。
 - 会话拖拽排序（手动顺序）没有实现，顺序只由更新时间决定。
 - 只影响当前浏览器；多设备之间不共享文件夹结构。
+- 其它插件注册到「会话行子槽」的条目在本插件接管期间不显示（详见上一节第 2 条）。
+- 会话菜单只覆盖本插件自己实现的动作；宿主原生的 `session.menu.item` 条目（pin、rename
+  等由宿主注册、id 为 `pin`/`rename`/`fork`/`archive`/`session-id` 的五个）同样不渲染。
 
 ## 开发
 
@@ -103,3 +145,7 @@ node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))"
 
 `client.js` 是单文件、无构建步骤：`window.__ModuleLoader__.load({ id, factory })`
 里只 `require('react')`，不引入任何 Harness Client 包。
+
+## 许可
+
+MIT，见 [LICENSE](LICENSE)。
