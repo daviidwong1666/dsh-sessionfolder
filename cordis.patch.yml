@@ -1,0 +1,3 @@
+- insert:
+    - id: session-folders
+      name: '@local/session-folders'
