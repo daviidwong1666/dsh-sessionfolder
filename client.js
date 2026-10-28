@@ -1,5 +1,5 @@
 window.__ModuleLoader__.load({
-  id: '@local/session-folders',
+  id: 'dsh-session-folders',
   factory(require) {
     const React = require('react');
     const h = React.createElement;
@@ -1394,11 +1394,11 @@ window.__ModuleLoader__.load({
         };
 
         ctx.effect(() => {
-          const tagId = '@local/session-folders/styles';
+          const tagId = 'dsh-session-folders/styles';
           let tag = document.querySelector('style[data-plugin-css="' + tagId + '"]');
           if (tag === null) {
             tag = document.createElement('style');
-            tag.dataset.plugin = '@local/session-folders';
+            tag.dataset.plugin = 'dsh-session-folders';
             tag.dataset.pluginCss = tagId;
             tag.textContent = CSS;
             document.head.appendChild(tag);

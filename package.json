@@ -1,16 +1,21 @@
 {
-  "name": "@local/session-folders",
+  "name": "dsh-session-folders",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Sidebar session folders: group each workspace's sessions into collapsible, color-coded folders.",
+  "keywords": ["dsh", "deepseek-harness", "plugin", "sidebar", "sessions"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daviidwong1666/dsh-sessionfolder.git"
+  },
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
     "./locale/*.json": "./locale/*.json",
     "./icon": "./icon.svg"
   },
-  "files": ["index.js", "client.js", "cordis.patch.yml", "locale/*.json", "icon.svg"],
+  "files": ["index.js", "client.js", "cordis.patch.yml", "locale/*.json", "icon.svg", "README.md"],
   "dsh": {
     "bundle": { "patch": "./cordis.patch.yml" },
     "client": {
